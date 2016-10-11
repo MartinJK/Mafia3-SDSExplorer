@@ -1,0 +1,144 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>9.0.30729</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{5A432EEC-FE92-4AD8-9DE0-FABBA0B552B4}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Gibbed.Illusion.FileFormats</RootNamespace>
+    <AssemblyName>Gibbed.Illusion.FileFormats</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <FileUpgradeFlags>
+    </FileUpgradeFlags>
+    <OldToolsVersion>3.5</OldToolsVersion>
+    <UpgradeBackupLocation />
+    <PublishUrl>publish\</PublishUrl>
+    <Install>true</Install>
+    <InstallFrom>Disk</InstallFrom>
+    <UpdateEnabled>false</UpdateEnabled>
+    <UpdateMode>Foreground</UpdateMode>
+    <UpdateInterval>7</UpdateInterval>
+    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
+    <UpdatePeriodically>false</UpdatePeriodically>
+    <UpdateRequired>false</UpdateRequired>
+    <MapFileExtensions>true</MapFileExtensions>
+    <ApplicationRevision>0</ApplicationRevision>
+    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
+    <UseApplicationTrust>false</UseApplicationTrust>
+    <BootstrapperEnabled>true</BootstrapperEnabled>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>2</WarningLevel>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="ICSharpCode.SharpZipLib, Version=0.85.5.452, Culture=neutral, PublicKeyToken=1b03e6acf1164f73, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\other\ICSharpCode.SharpZipLib.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Xml.Linq">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="System.Data.DataSetExtensions">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="BlockStream.cs" />
+    <Compile Include="DataStorage\CompressedBlockHeader.cs" />
+    <Compile Include="DataStorage\FileHeader.cs" />
+    <Compile Include="DataStorage\ArchiveHeader.cs" />
+    <Compile Include="DataStorage\ResourceTypeReference.cs" />
+    <Compile Include="FNV.cs" />
+    <Compile Include="IResourceType.cs" />
+    <Compile Include="ResourceTypes\MemFileResource.cs" />
+    <Compile Include="ResourceTypes\ScriptData.cs" />
+    <Compile Include="ResourceTypes\ScriptResource.cs" />
+    <Compile Include="ResourceTypes\TableData.cs" />
+    <Compile Include="ResourceTypes\TableResource.cs" />
+    <Compile Include="ResourceTypes\TextureResource.cs" />
+    <Compile Include="ResourceTypes\XmlResource.cs" />
+    <Compile Include="ResourceTypes\XmlResource0.cs" />
+    <Compile Include="ResourceTypes\XmlResource1.cs" />
+    <Compile Include="SdsConfigFile.cs" />
+    <Compile Include="SdsMemory.cs" />
+    <Compile Include="SdsReader.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="StreamHelpers.cs" />
+    <Compile Include="TEA.cs" />
+    <Compile Include="ZLib\Adler32.cs" />
+    <Compile Include="ZLib\Deflate.cs" />
+    <Compile Include="ZLib\InfBlocks.cs" />
+    <Compile Include="ZLib\InfCodes.cs" />
+    <Compile Include="ZLib\Inflate.cs" />
+    <Compile Include="ZLib\InfTree.cs" />
+    <Compile Include="ZLib\StaticTree.cs" />
+    <Compile Include="ZLib\SupportClass.cs" />
+    <Compile Include="ZLib\Tree.cs" />
+    <Compile Include="ZLib\ZInputStream.cs" />
+    <Compile Include="ZLib\Zlib.cs" />
+    <Compile Include="ZLib\ZOutputStream.cs" />
+    <Compile Include="ZLib\ZStream.cs" />
+    <Compile Include="ZLib\ZStreamException.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Gibbed.Helpers\Gibbed.Helpers.csproj">
+      <Project>{5162A9FB-4DE1-4BBF-B7A2-5E8116AB0D26}</Project>
+      <Name>Gibbed.Helpers</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1 Client Profile</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Windows.Installer.3.1">
+      <Visible>False</Visible>
+      <ProductName>Windows Installer 3.1</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
