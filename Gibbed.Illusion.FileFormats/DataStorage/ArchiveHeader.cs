@@ -5,6 +5,7 @@ using Gibbed.Helpers;
 
 namespace Gibbed.Illusion.FileFormats.DataStorage
 {
+    // Copyright and thanks to CarLuver96 (http://forum.xentax.com/viewtopic.php?f=10&t=15336)
     public class SDSChunkData
     {
         public int memorySize; // size in memory? (e.g. uncompressed size)
