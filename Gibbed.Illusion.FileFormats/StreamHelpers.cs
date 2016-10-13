@@ -74,7 +74,7 @@ namespace Gibbed.Illusion.FileFormats
         {
             var length = stream.ReadValueU8();
             stream.Seek(seek, SeekOrigin.Current);
-            if (length > 0x3F)
+            if (length > 255)
             {
                 throw new InvalidOperationException();
             }

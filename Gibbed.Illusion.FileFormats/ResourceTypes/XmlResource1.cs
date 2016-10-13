@@ -33,8 +33,9 @@ namespace Gibbed.Illusion.FileFormats.ResourceTypes
 
             var name = input.ReadStringU8(3);
             input.Seek(1, SeekOrigin.Current); // 0 terminator of string
-
+            
             var root = (NodeEntry)DeserializeNodeEntry(input);
+            root.Name = name;
 
             var settings = new XmlWriterSettings();
             settings.Indent = true;
@@ -76,112 +77,121 @@ namespace Gibbed.Illusion.FileFormats.ResourceTypes
             writer.WriteEndElement();
         }
 
+        private static object DeserializeNodeEntryInternal(NodeEntry previousNode, Stream input)
+        {
+            var node = new NodeEntry()
+            {
+                Name = "undefined",
+            };
+
+            byte[] unkBytes = new byte[6];
+            input.Read(unkBytes, 0, unkBytes.Length);
+
+            byte[] stringArr = new byte[255];
+            bool read = true;
+            char index = (char)0;
+            while (read)
+            {
+                byte[] reader = new byte[1];
+                input.Read(reader, 0, 1);
+                read = reader[0] != 0;
+                stringArr[index] = reader[0];
+                if (index == 0 && !read)
+                {
+                    read = true;
+                }
+
+                if (index == 1 && !read)
+                {
+                    break;
+                }
+                index++;
+            }
+
+            var name = Encoding.ASCII.GetString(stringArr);
+            name = name.Trim('\0');
+            name = name.Replace("\0", "");
+            node.Name = name;
+            
+            var nodeType = input.ReadValueU8();
+            var subNotes = input.ReadValueU8();
+            if (nodeType == 4)
+            {
+                DeserializeNodeEntryInternal(node, input);
+            }
+
+            double num;
+            if (double.TryParse(name, out num) || name.Contains(":"))
+            {
+                previousNode.Value = new DataValue(DataType.String, name);
+            }
+            else
+            {
+                children.Add(node);
+            }
+            return node;
+        }
+
+        private static List<object> children;
+
         private static object DeserializeNodeEntry(Stream input)
         {
-            var name_ = input.ReadStringU8(3);
+            children = new List<object>();
+
+            var name_ = input.ReadStringU8(3); // File path
             input.Seek(1, SeekOrigin.Current); // 0 terminator of string
+            input.Seek(18, SeekOrigin.Current); // 0 terminator of string
+
+            var node = new NodeEntry();
 
             var nodeType = input.ReadValueU8();
-            var unk1 = input.ReadValueU8();
-
-            switch (nodeType)
+            var subNotes = input.ReadValueU8();
+            
+            if (nodeType == 4)
             {
-                case 1:
+                byte[] unkBytes = new byte[6];
+                input.Read(unkBytes, 0, unkBytes.Length);
+
+                byte[] stringArr = new byte[255];
+                bool read = true;
+                char index = (char)0;
+                while(read)
                 {
-                    var nameLength = input.ReadValueU8();
-                    var childCount = input.ReadValueU16();
-                    var attributeCount = input.ReadValueU8();
-                    input.ReadValueU32();
-
-                    var name = input.ReadString(nameLength + 1, true, Encoding.UTF8);
-
-                    var node = new NodeEntry()
+                    byte[] reader = new byte[1];
+                    input.Read(reader, 0, 1);
+                    read = reader[0] != 0;
+                    stringArr[index] = reader[0];
+                    if(index == 0 && !read)
                     {
-                        Name = name,
-                    };
-
-                    var children = new List<object>();
-                    for (ushort i = 0; i < childCount; i++)
-                    {
-                        children.Add(DeserializeNodeEntry(input));
+                        read = true;
                     }
 
-                    if (children.Count == 1 && children[0] is DataValue)
+                    if(index == 1 && !read)
                     {
-                        node.Value = (DataValue)children[0];
+                        break;
                     }
-                    else
-                    {
-                        foreach (var child in children)
-                        {
-                            node.Children.Add((NodeEntry)child);
-                        }
-                    }
-
-                    for (byte i = 0; i < attributeCount; i++)
-                    {
-                        var child = DeserializeNodeEntry(input);
-
-                        if (child is NodeEntry)
-                        {
-                            var data = (NodeEntry)child;
-
-                            if (data.Children.Count != 0 ||
-                                data.Attributes.Count != 0)
-                            {
-                                throw new FormatException();
-                            }
-
-                            var attribute = new AttributeEntry()
-                            {
-                                Name = data.Name,
-                                Value = data.Value,
-                            };
-                            node.Attributes.Add(attribute);
-                        }
-                        else
-                        {
-                            node.Attributes.Add((AttributeEntry)child);
-                        }
-                    }
-
-                    return node;
+                    index++;
                 }
 
-                case 4:
+                var name = Encoding.ASCII.GetString(stringArr);
+                name = name.Trim('\0');
+                name = name.Replace("\0", "");
+
+                nodeType = input.ReadValueU8();
+                subNotes = input.ReadValueU8();
+
+                if(nodeType == 4)
                 {
-                    var valueType = input.ReadValueU8();
-                    if (valueType == 0)
-                    {
-                        var valueLength = input.ReadValueU16();
-                        var value = input.ReadString(valueLength + 1, true, Encoding.UTF8);
-                        return new DataValue(DataType.String, value);
-                    }
-                    else
-                    {
-                        throw new NotImplementedException();
-                    }
-                }
-
-                case 5:
-                {
-                    var nameLength = input.ReadValueU8();
-                    var name = input.ReadString(nameLength + 1, true, Encoding.UTF8);
-
-                    var attribute = new NodeEntry()
-                    {
-                        Name = name,
-                    };
-
-                    attribute.Value = (DataValue)DeserializeNodeEntry(input);
-                    return attribute;
-                }
-
-                default:
-                {
-                    throw new NotImplementedException();
+                    DeserializeNodeEntryInternal(node, input);
                 }
             }
+
+            foreach (var child in children)
+            {
+                node.Children.Add((NodeEntry)child);
+            }
+
+            return node;
         }
 
         private class NodeEntry
