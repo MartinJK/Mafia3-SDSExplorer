@@ -39,7 +39,7 @@ namespace Gibbed.Helpers
 
         public static MemoryStream ReadToMemoryStream(this Stream stream, long size)
         {
-            return stream.ReadToMemoryStream(size, 0x4000);
+            return stream.ReadToMemoryStream(size, 0x10000);
         }
 
         public static void WriteFromStream(this Stream stream, Stream input, long size, int buffer)
@@ -57,7 +57,7 @@ namespace Gibbed.Helpers
 
         public static void WriteFromStream(this Stream stream, Stream input, long size)
         {
-            stream.WriteFromStream(input, size, 0x4000);
+            stream.WriteFromStream(input, size, 0x10000);
         }
     }
 }

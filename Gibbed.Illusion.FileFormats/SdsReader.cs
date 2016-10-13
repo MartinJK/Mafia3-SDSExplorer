@@ -33,6 +33,41 @@ namespace Gibbed.Illusion.FileFormats
             this.BlockStream = null;
         }
 
+        public static void CompressData(byte[] inData, out byte[] outData)
+        {
+            using (MemoryStream outMemoryStream = new MemoryStream())
+            using (ZOutputStream outZStream = new ZOutputStream(outMemoryStream, zlibConst.Z_DEFAULT_COMPRESSION))
+            using (Stream inMemoryStream = new MemoryStream(inData))
+            {
+                CopyStream(inMemoryStream, outZStream);
+                outZStream.finish();
+                outData = outMemoryStream.ToArray();
+            }
+        }
+
+        public static void DecompressData(byte[] inData, out byte[] outData)
+        {
+            using (MemoryStream outMemoryStream = new MemoryStream())
+            using (ZOutputStream outZStream = new ZOutputStream(outMemoryStream, 1))
+            using (Stream inMemoryStream = new MemoryStream(inData))
+            {
+                CopyStream(inMemoryStream, outZStream);
+                outZStream.finish();
+                outData = outMemoryStream.ToArray();
+            }
+        }
+
+        public static void CopyStream(System.IO.Stream input, System.IO.Stream output)
+        {
+            byte[] buffer = new byte[2000];
+            int len;
+            while ((len = input.Read(buffer, 0, 2000)) > 0)
+            {
+                output.Write(buffer, 0, len);
+            }
+            output.Flush();
+        }
+
         public bool Open(string path)
         {
             if (this.BlockStream != null)
@@ -81,7 +116,8 @@ namespace Gibbed.Illusion.FileFormats
                 input.Read(fsfh, 0, fsfh.Length);
 
                 // "tables/fsfh.bin"
-                if (FNV.Hash64(fsfh, 0, fsfh.Length) == 0x39DD22E69C74EC6F)
+                var hash = FNV.Hash64(fsfh, 0, fsfh.Length);
+                if (hash == 0x39DD22E69C74EC6F) // 0x7726deec38791c96
                 {
                     input.Seek(0x10000, SeekOrigin.Begin);
 
@@ -148,18 +184,6 @@ namespace Gibbed.Illusion.FileFormats
 
             // header
             data.Seek(0, SeekOrigin.Begin);
-            unsafe
-            {
-                var buffer = new byte[data.Length];
-                data.Read(buffer, 0, buffer.Length);
-                TypedReference tr = __makeref(buffer);
-                IntPtr ptr = **(IntPtr**)(&tr);
-                string hex = ptr.ToString("X");
-                string hexOutput = String.Format("Data: 0x{0:X}", hex);
-                Debug.WriteLine(hexOutput);
-            }
-
-            data.Seek(0, SeekOrigin.Begin);
             {
                 var memory = data.ReadToMemoryStreamSafe(
                     12, littleEndian);
@@ -181,35 +205,49 @@ namespace Gibbed.Illusion.FileFormats
             }
 
             data.Seek(0, SeekOrigin.Begin);
+            unsafe
+            {
+                var buffer = new byte[data.Length];
+                data.Read(buffer, 0, buffer.Length);
+                TypedReference tr = __makeref(buffer);
+                IntPtr ptr = **(IntPtr**)(&tr);
+                string hex = ptr.ToString("X");
+                string hexOutput = String.Format("Data: 0x{0:X}", hex);
+                Debug.WriteLine(hexOutput);
+            }
+            data.Seek(0, SeekOrigin.Begin);
+
             DataStorage.SDSFile file = new DataStorage.SDSFile();
             var mem = data; // data.ReadToMemoryStreamSafe(data.Length, littleEndian);
             file.Deserialize(mem, littleEndian);
 
-            file.resourceInfo.count = (int)input.ReadValueU32(littleEndian);
+            // Read resources count info
+            file.resourceInfo.count = (int)data.ReadValueU32(littleEndian);
 
+            // Read resources types
             file.resourceTypes = new DataStorage.SDSResourceType[file.resourceInfo.count];
 
             for (var i = 0; i < file.resourceInfo.count; ++i)
             {
                 file.resourceTypes[i] = new DataStorage.SDSResourceType();
-                file.resourceTypes[i].typeIndex = (int)input.ReadValueU32(littleEndian);
-                file.resourceTypes[i].strLen = (int)input.ReadValueU32(littleEndian);
+                file.resourceTypes[i].typeIndex = (int)data.ReadValueU32(littleEndian);
+                file.resourceTypes[i].strLen = (int)data.ReadValueU32(littleEndian);
                 file.resourceTypes[i].typeName = new byte[file.resourceTypes[i].strLen];
-                input.Read(file.resourceTypes[i].typeName, 0, file.resourceTypes[i].typeName.Length);
+                data.Read(file.resourceTypes[i].typeName, 0, file.resourceTypes[i].typeName.Length);
                 var realTypename = Encoding.ASCII.GetString(file.resourceTypes[i].typeName);
-                file.resourceTypes[i].reserved = (int)input.ReadValueU32(littleEndian);
+                file.resourceTypes[i].parent = (int)data.ReadValueU32(littleEndian);
 
                 var type = new DataStorage.ResourceTypeReference();
                 type.Id = (uint)file.resourceTypes[i].typeIndex;
                 type.Name = realTypename;
                 this.ResourceTypes.Add(type);
             }
-
-            file.chunkInfo.magic = (int)input.ReadValueU32(littleEndian);
-            file.chunkInfo.alignment = (int)input.ReadValueU32(littleEndian);
+            
+            file.chunkInfo.magic = (int)data.ReadValueU32(littleEndian);
+            file.chunkInfo.alignment = (int)data.ReadValueU32(littleEndian);
 
             var tmp = new byte[1];
-            input.Read(tmp, 0, tmp.Length);
+            data.Read(tmp, 0, tmp.Length);
             file.chunkInfo.flags = (char)tmp[0];
 
             if (file.chunkInfo.magic != 0x6C7A4555 || file.chunkInfo.alignment != 0x10000 || file.chunkInfo.flags != 4)
@@ -217,21 +255,24 @@ namespace Gibbed.Illusion.FileFormats
                 throw new InvalidOperationException();
             }
 
-            file.chunkData = new DataStorage.SDSChunk[file.chunkCount];
+           // file.chunkData = new DataStorage.SDSChunk[];
 
-            var blockStream = new BlockStream(input);
+            var blockStream = new BlockStream(data);
             long virtualOffset = 0;
-            for (var i = 0; i < file.chunkCount; ++i)
+            var index = 0;
+            file.chunkData = new List<DataStorage.SDSChunk>();
+            while (true)
             {
-                file.chunkData[i] = new DataStorage.SDSChunk();
-                file.chunkData[i].dataSize = (int)input.ReadValueU32(littleEndian);
+                var i = index;
+                var chunk = new DataStorage.SDSChunk();
+                chunk.dataSize = (int)data.ReadValueU32(littleEndian);
 
                 var tmp2 = new byte[1];
-                input.Read(tmp2, 0, tmp2.Length);
-                file.chunkData[i].dataType = (char)tmp2[0];
+                data.Read(tmp2, 0, tmp2.Length);
+                chunk.dataType = (char)tmp2[0];
 
-                uint size = (uint)file.chunkData[i].dataSize;
-                bool compressed = file.chunkData[i].dataType != 0;
+                uint size = (uint)chunk.dataSize;
+                bool compressed = chunk.dataType != 0;
                 if (size == 0)
                 {
                     break;
@@ -240,7 +281,7 @@ namespace Gibbed.Illusion.FileFormats
                 if (compressed == true)
                 {
                     var compressionInfo = new DataStorage.CompressedBlockHeader();
-                    compressionInfo.Deserialize(input, littleEndian);
+                    compressionInfo.Deserialize(data, littleEndian);
 
                     if (compressionInfo.Unknown04 != 32 ||
                             compressionInfo.Unknown08 != 65536 ||
@@ -260,7 +301,7 @@ namespace Gibbed.Illusion.FileFormats
                         data.Position,
                         compressionInfo.CompressedSize);
 
-                    input.Seek(compressionInfo.CompressedSize, SeekOrigin.Current);
+                    data.Seek(compressionInfo.CompressedSize, SeekOrigin.Current);
                 }
                 else
                 {
@@ -269,55 +310,39 @@ namespace Gibbed.Illusion.FileFormats
                            size,
                            data.Position);
 
-                    input.Seek(size, SeekOrigin.Current);
+                    data.Seek(size, SeekOrigin.Current);
                 }
 
+                file.chunkData.Add(chunk);
+                ++index;
                 virtualOffset += file.chunkInfo.alignment;
-                /*file.dataChunk[i].data.memorySize = (int)input.ReadValueU32(littleEndian);
-                file.dataChunk[i].data.bufferOffset = (int)input.ReadValueU32(littleEndian);
-                file.dataChunk[i].data.memorySize_2 = (int)input.ReadValueU32(littleEndian);
-
-                file.dataChunk[i].data.unk_0A = (short)input.ReadValueU16(littleEndian);
-                file.dataChunk[i].data.unk_0C = (short)input.ReadValueU16(littleEndian);
-
-                file.dataChunk[i].data.bufferSize = (short)input.ReadValueU16(littleEndian);
-
-                file.dataChunk[i].data.buffer = new byte[file.dataChunk[i].data.bufferSize];
-                input.Read(file.dataChunk[i].data.buffer, 0, file.dataChunk[i].data.bufferSize);*/
             }
 
             blockStream.Seek(0, SeekOrigin.Begin);
             {
                 this.Entries.Clear();
-                for (uint i = 0; i < file.chunkCount; i++)
+                for (uint i = 0; i < file.dataCount; i++)
                 {
                     var position = blockStream.Position;
-                    var memory = blockStream.ReadToMemoryStreamSafe(26, littleEndian);
-
+                    var memory = blockStream.ReadToMemoryStreamSafe(32, littleEndian);
+                    
                     var fileHeader = new DataStorage.FileHeader();
                     fileHeader.Deserialize(memory, littleEndian);
-                    /*
-                    string description = descriptions == null ? null : descriptions[(int)i];
-                    if (string.IsNullOrEmpty(description) == true ||
-                        description == "not available")
-                    {
-                        description = string.Format("{0:X8}", position);
-                    }
-                    */
+
                     string description = "not available";
 
                     this.Entries.Add(new Entry()
                     {
                         Header = fileHeader,
                         Description = description,
-                        Offset = blockStream.Position,
-                        Size = fileHeader.Size - 30,
+                        Offset = blockStream.Position,// Data offset
+                        Size = fileHeader.Size - 36,
                     });
 
-                    blockStream.Seek(position + fileHeader.Size, SeekOrigin.Begin);
+                    blockStream.Seek(position + (fileHeader.Size), SeekOrigin.Begin);
                 }
             }
-            
+
             this.Header = file;
             this.BlockStream = blockStream;
             
@@ -375,9 +400,10 @@ namespace Gibbed.Illusion.FileFormats
             this.BlockStream.Seek(entry.Offset, SeekOrigin.Begin);
 
             var memory = new MemoryStream();
+            return memory;
             {
                 long left = entry.Size;
-                byte[] buffer = new byte[0x10000];
+                byte[] buffer = new byte[0x10000]; // - 30];
                 while (left > 0)
                 {
                     int block = (int)(Math.Min(left, buffer.Length));

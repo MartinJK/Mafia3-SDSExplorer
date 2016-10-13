@@ -13,6 +13,8 @@ namespace Gibbed.Illusion.FileFormats.DataStorage
         public uint SlotVramRequired;
         public uint OtherRamRequired;
         public uint OtherVramRequired;
+        public ushort _f1E;
+        public uint _f20;
 
         public void Serialize(Stream output, bool littleEndian)
         {
@@ -23,6 +25,8 @@ namespace Gibbed.Illusion.FileFormats.DataStorage
             output.WriteValueU32(this.SlotVramRequired, littleEndian);
             output.WriteValueU32(this.OtherRamRequired, littleEndian);
             output.WriteValueU32(this.OtherVramRequired, littleEndian);
+            output.WriteValueU16(this._f1E, littleEndian);
+            output.WriteValueU32(this._f20, littleEndian);
         }
 
         public void Deserialize(Stream input, bool littleEndian)
@@ -34,6 +38,8 @@ namespace Gibbed.Illusion.FileFormats.DataStorage
             this.SlotVramRequired = input.ReadValueU32(littleEndian);
             this.OtherRamRequired = input.ReadValueU32(littleEndian);
             this.OtherVramRequired = input.ReadValueU32(littleEndian);
+            this._f1E = input.ReadValueU16(littleEndian);
+            this._f20 = input.ReadValueU32(littleEndian);
         }
 
         public object Clone()
@@ -47,6 +53,8 @@ namespace Gibbed.Illusion.FileFormats.DataStorage
                 SlotVramRequired = this.SlotVramRequired,
                 OtherRamRequired = this.OtherRamRequired,
                 OtherVramRequired = this.OtherVramRequired,
+                _f1E = this._f1E,
+                _f20 = this._f20
             };
         }
     }
