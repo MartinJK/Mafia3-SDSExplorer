@@ -78,6 +78,7 @@
     <Compile Include="DataStorage\CompressedBlockHeader.cs" />
     <Compile Include="DataStorage\FileHeader.cs" />
     <Compile Include="DataStorage\ArchiveHeader.cs" />
+    <Compile Include="DataStorage\Hahes.cs" />
     <Compile Include="DataStorage\ResourceTypeReference.cs" />
     <Compile Include="FNV.cs" />
     <Compile Include="IResourceType.cs" />

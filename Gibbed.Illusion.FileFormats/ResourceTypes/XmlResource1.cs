@@ -4,6 +4,7 @@ using System.Text;
 using System.IO;
 using Gibbed.Helpers;
 using System.Xml;
+using System.Diagnostics;
 
 namespace Gibbed.Illusion.FileFormats.ResourceTypes
 {
@@ -16,15 +17,22 @@ namespace Gibbed.Illusion.FileFormats.ResourceTypes
 
         public static string Deserialize(Stream input)
         {
-            if (input.ReadValueU16() != 0x5842) // 'BX'
+            var pos = input.Position;
+            input.Seek(0, SeekOrigin.Begin);
+            unsafe
             {
-                throw new FormatException();
+                var buffer = new byte[input.Length];
+                input.Read(buffer, 0, buffer.Length);
+                TypedReference tr = __makeref(buffer);
+                IntPtr ptr = **(IntPtr**)(&tr);
+                string hex = ptr.ToString("X");
+                string hexOutput = String.Format("Data: 0x{0:X}", hex);
+                Debug.WriteLine(hexOutput);
             }
+            input.Seek(2, SeekOrigin.Begin);
 
-            if (input.ReadValueU16() > 1)
-            {
-                throw new FormatException();
-            }
+            var name = input.ReadStringU8(3);
+            input.Seek(1, SeekOrigin.Current); // 0 terminator of string
 
             var root = (NodeEntry)DeserializeNodeEntry(input);
 
@@ -70,8 +78,11 @@ namespace Gibbed.Illusion.FileFormats.ResourceTypes
 
         private static object DeserializeNodeEntry(Stream input)
         {
-            var unk1 = input.ReadValueU16();
+            var name_ = input.ReadStringU8(3);
+            input.Seek(1, SeekOrigin.Current); // 0 terminator of string
+
             var nodeType = input.ReadValueU8();
+            var unk1 = input.ReadValueU8();
 
             switch (nodeType)
             {
@@ -80,6 +91,7 @@ namespace Gibbed.Illusion.FileFormats.ResourceTypes
                     var nameLength = input.ReadValueU8();
                     var childCount = input.ReadValueU16();
                     var attributeCount = input.ReadValueU8();
+                    input.ReadValueU32();
 
                     var name = input.ReadString(nameLength + 1, true, Encoding.UTF8);
 

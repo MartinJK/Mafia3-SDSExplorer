@@ -39,9 +39,13 @@ namespace Gibbed.Squish.DDS
         }
 
         public uint Size;
+        public UInt16 pat;
         public HeaderFlags Flags;
+        public UInt16 pat2;
         public int Height;
+        public UInt16 pat3;
         public int Width;
+        public UInt16 pat4;
         public uint PitchOrLinearSize;
         public uint Depth;
         public uint MipMapCount;
@@ -60,9 +64,13 @@ namespace Gibbed.Squish.DDS
         public void Serialize(Stream output, Endian endian)
         {
             output.WriteValueU32(this.Size, endian);
+            output.WriteValueU16(this.pat, endian);
             output.WriteValueEnum<HeaderFlags>(this.Flags, endian);
+            output.WriteValueU16(this.pat2, endian);
             output.WriteValueS32(this.Height, endian);
+            output.WriteValueU16(this.pat3, endian);
             output.WriteValueS32(this.Width, endian);
+            output.WriteValueU16(this.pat4, endian);
             output.WriteValueU32(this.PitchOrLinearSize, endian);
             output.WriteValueU32(this.Depth, endian);
             output.WriteValueU32(this.MipMapCount, endian);
@@ -82,9 +90,13 @@ namespace Gibbed.Squish.DDS
         public void Deserialize(Stream input, Endian endian)
         {
             this.Size = input.ReadValueU32(endian);
+            this.pat = input.ReadValueU16(endian);
             this.Flags = input.ReadValueEnum<HeaderFlags>(endian);
-            this.Height = input.ReadValueS32(endian);
-            this.Width = input.ReadValueS32(endian);
+            this.pat2 = input.ReadValueU16(endian);
+            this.Height = input.ReadValueS16(endian);
+            this.pat3 = input.ReadValueU16(endian);
+            this.Width = input.ReadValueS16(endian);
+            this.pat4 = input.ReadValueU16(endian);
             this.PitchOrLinearSize = input.ReadValueU32(endian);
             this.Depth = input.ReadValueU32(endian);
             this.MipMapCount = input.ReadValueU32(endian);

@@ -32,11 +32,12 @@ namespace Gibbed.Illusion.FileFormats
             }
             
             var theirHash = stream.ReadValueU32(littleEndian);
-            /*if (theirHash != myHash2)
+            if (theirHash != myHash2)
             {
-                throw new InvalidDataException(string.Format("hash failure ({0:X} vs {1:X})",
-                    myHash, theirHash));
-            }*/
+                // As it sometimes does not match, outcommented it at the moment
+                /*throw new InvalidDataException(string.Format("hash failure ({0:X} vs {1:X})",
+                    myHash, theirHash));*/
+            }
 
             memory.Position = 0;
             return memory;
@@ -64,6 +65,34 @@ namespace Gibbed.Illusion.FileFormats
             data.Position = position;
         }
 
+        public static string ReadStringU8(this Stream stream, byte seek = 0)
+        {
+            return stream.ReadStringU8(true, seek);
+        }
+
+        public static string ReadStringU8(this Stream stream, bool littleEndian, byte seek = 0)
+        {
+            var length = stream.ReadValueU8();
+            stream.Seek(seek, SeekOrigin.Current);
+            if (length > 0x3F)
+            {
+                throw new InvalidOperationException();
+            }
+            return stream.ReadString(length);
+        }
+
+        public static void WriteStringU8(this Stream stream, string value)
+        {
+            stream.WriteStringU8(value, true);
+        }
+
+        public static void WriteStringU8(this Stream stream, string value, bool littleEndian)
+        {
+            byte length = (byte)value.Length;
+            stream.WriteValueU8(length);
+            stream.WriteString(length == value.Length ? value : value.Substring(0, length));
+        }
+
         public static string ReadStringU16(this Stream stream)
         {
             return stream.ReadStringU16(true);
@@ -74,7 +103,8 @@ namespace Gibbed.Illusion.FileFormats
             var length = stream.ReadValueU16(littleEndian);
             if (length > 0x3FF)
             {
-                throw new InvalidOperationException();
+                return "unknown";
+                //throw new InvalidOperationException();
             }
             return stream.ReadString(length);
         }
@@ -101,7 +131,8 @@ namespace Gibbed.Illusion.FileFormats
             var length = stream.ReadValueU32(littleEndian);
             if (length > 0x3FF)
             {
-                throw new InvalidOperationException();
+                return "unknown";
+                //throw new InvalidOperationException();
             }
             return stream.ReadString(length);
         }

@@ -17,6 +17,7 @@ namespace Gibbed.Illusion.FileFormats
         private Stream FileStream;
         private Stream DataStream;
         private BlockStream BlockStream;
+        public Hashes.M3HashList hashList;
 
         public List<DataStorage.ResourceTypeReference> ResourceTypes =
             new List<DataStorage.ResourceTypeReference>();
@@ -31,41 +32,7 @@ namespace Gibbed.Illusion.FileFormats
             this.FileStream = null;
             this.DataStream = null;
             this.BlockStream = null;
-        }
-
-        public static void CompressData(byte[] inData, out byte[] outData)
-        {
-            using (MemoryStream outMemoryStream = new MemoryStream())
-            using (ZOutputStream outZStream = new ZOutputStream(outMemoryStream, zlibConst.Z_DEFAULT_COMPRESSION))
-            using (Stream inMemoryStream = new MemoryStream(inData))
-            {
-                CopyStream(inMemoryStream, outZStream);
-                outZStream.finish();
-                outData = outMemoryStream.ToArray();
-            }
-        }
-
-        public static void DecompressData(byte[] inData, out byte[] outData)
-        {
-            using (MemoryStream outMemoryStream = new MemoryStream())
-            using (ZOutputStream outZStream = new ZOutputStream(outMemoryStream, 1))
-            using (Stream inMemoryStream = new MemoryStream(inData))
-            {
-                CopyStream(inMemoryStream, outZStream);
-                outZStream.finish();
-                outData = outMemoryStream.ToArray();
-            }
-        }
-
-        public static void CopyStream(System.IO.Stream input, System.IO.Stream output)
-        {
-            byte[] buffer = new byte[2000];
-            int len;
-            while ((len = input.Read(buffer, 0, 2000)) > 0)
-            {
-                output.Write(buffer, 0, len);
-            }
-            output.Flush();
+            this.hashList = null;
         }
 
         public bool Open(string path)
@@ -109,71 +76,10 @@ namespace Gibbed.Illusion.FileFormats
         {
             Stream data = input;
 
-            if (input.Length >= (0x90 + 15))
-            {
-                input.Seek(0x90, SeekOrigin.Begin);
-                byte[] fsfh = new byte[15];
-                input.Read(fsfh, 0, fsfh.Length);
+            hashList = new Hashes.M3HashList();
+            hashList.Initialize();
 
-                // "tables/fsfh.bin"
-                var hash = FNV.Hash64(fsfh, 0, fsfh.Length);
-                if (hash == 0x39DD22E69C74EC6F) // 0x7726deec38791c96
-                {
-                    input.Seek(0x10000, SeekOrigin.Begin);
-
-                    FileFormats.TEA.Setup setup = null;
-
-                    byte[] encryptedHeader = new byte[8];
-                    input.Read(encryptedHeader, 0, encryptedHeader.Length);
-
-                    byte[] decryptedHeader = new byte[8];
-                    foreach (var current in FileFormats.TEA.Mafia3.Setups)
-                    {
-                        Array.Copy(
-                            encryptedHeader,
-                            decryptedHeader,
-                            encryptedHeader.Length);
-
-                        FileFormats.TEA.Decrypt(
-                            decryptedHeader,
-                            0,
-                            8,
-                            FileFormats.TEA.Mafia3.Keys,
-                            current.Sum,
-                            current.Delta,
-                            current.Rounds);
-
-                        if (BitConverter.ToUInt32(decryptedHeader, 0) == 0x00534453)
-                        {
-                            setup = current;
-                            break;
-                        }
-                    }
-
-                    if (setup == null)
-                    {
-                        throw new InvalidOperationException();
-                    }
-
-                    input.Seek(0x10000, SeekOrigin.Begin);
-
-                    data = new MemoryStream();
-
-                    long left = input.Length - input.Position;
-                    byte[] buffer = new byte[0x10000];
-                    while (left > 0)
-                    {
-                        int block = (int)(Math.Min(left, buffer.Length));
-                        input.Read(buffer, 0, block);
-                        FileFormats.TEA.Decrypt(buffer, 0, block, FileFormats.TEA.Mafia3.Keys, setup.Sum, setup.Delta, setup.Rounds);
-                        data.Write(buffer, 0, block);
-                        left -= block;
-                    }
-
-                    data.Position = 0;
-                }
-            }
-
+            // little endian?
             bool littleEndian;
             {
                 data.Seek(8, SeekOrigin.Begin);
@@ -205,17 +111,6 @@ namespace Gibbed.Illusion.FileFormats
             }
 
             data.Seek(0, SeekOrigin.Begin);
-            unsafe
-            {
-                var buffer = new byte[data.Length];
-                data.Read(buffer, 0, buffer.Length);
-                TypedReference tr = __makeref(buffer);
-                IntPtr ptr = **(IntPtr**)(&tr);
-                string hex = ptr.ToString("X");
-                string hexOutput = String.Format("Data: 0x{0:X}", hex);
-                Debug.WriteLine(hexOutput);
-            }
-            data.Seek(0, SeekOrigin.Begin);
 
             DataStorage.SDSFile file = new DataStorage.SDSFile();
             var mem = data; // data.ReadToMemoryStreamSafe(data.Length, littleEndian);
@@ -227,6 +122,7 @@ namespace Gibbed.Illusion.FileFormats
             // Read resources types
             file.resourceTypes = new DataStorage.SDSResourceType[file.resourceInfo.count];
 
+            // Read resources info
             for (var i = 0; i < file.resourceInfo.count; ++i)
             {
                 file.resourceTypes[i] = new DataStorage.SDSResourceType();
@@ -242,7 +138,8 @@ namespace Gibbed.Illusion.FileFormats
                 type.Name = realTypename;
                 this.ResourceTypes.Add(type);
             }
-            
+
+            // Read chunk info
             file.chunkInfo.magic = (int)data.ReadValueU32(littleEndian);
             file.chunkInfo.alignment = (int)data.ReadValueU32(littleEndian);
 
@@ -250,13 +147,14 @@ namespace Gibbed.Illusion.FileFormats
             data.Read(tmp, 0, tmp.Length);
             file.chunkInfo.flags = (char)tmp[0];
 
-            if (file.chunkInfo.magic != 0x6C7A4555 || file.chunkInfo.alignment != 0x10000 || file.chunkInfo.flags != 4)
+            if (file.chunkInfo.magic != 0x6C7A4555
+                || file.chunkInfo.alignment != 0x10000 && file.chunkInfo.alignment != 0x00004000
+                || file.chunkInfo.flags != 4)
             {
                 throw new InvalidOperationException();
             }
-
-           // file.chunkData = new DataStorage.SDSChunk[];
-
+            
+            // Read chunk data
             var blockStream = new BlockStream(data);
             long virtualOffset = 0;
             var index = 0;
@@ -318,18 +216,43 @@ namespace Gibbed.Illusion.FileFormats
                 virtualOffset += file.chunkInfo.alignment;
             }
 
+            // Read files
             blockStream.Seek(0, SeekOrigin.Begin);
             {
                 this.Entries.Clear();
                 for (uint i = 0; i < file.dataCount; i++)
                 {
                     var position = blockStream.Position;
-                    var memory = blockStream.ReadToMemoryStreamSafe(32, littleEndian);
-                    
+                    var memory = blockStream.ReadToMemoryStreamSafe(36, littleEndian);
+
                     var fileHeader = new DataStorage.FileHeader();
                     fileHeader.Deserialize(memory, littleEndian);
 
-                    string description = "not available";
+                    var Name = memory.ReadValueU32(littleEndian);
+                    string description = hashList.GetStringByHash(Name);
+                    blockStream.Seek(blockStream.Position - 4, SeekOrigin.Begin);
+
+                    if (fileHeader.TypeId == 0) // Flash/XML
+                    {
+                        var blockPosition = blockStream.Position;
+                        var memoryName = blockStream.ReadToMemoryStreamSafe(255, littleEndian);
+                        memoryName.Seek(memoryName.Position + 2, SeekOrigin.Begin);
+
+                        var Name_ = memoryName.ReadStringU16(littleEndian);
+                        description = Name_;
+                        blockStream.Seek(blockPosition, SeekOrigin.Begin);
+                    }
+
+                    if (fileHeader.TypeId == 1) // MemFile
+                    {
+                        var blockPosition = blockStream.Position;
+                        var memoryName = blockStream.ReadToMemoryStreamSafe(255, littleEndian);
+                        memoryName.Seek(memoryName.Position + 6, SeekOrigin.Begin);
+
+                        var Name_ = memoryName.ReadStringU32(littleEndian);
+                        description = Name_;
+                        blockStream.Seek(blockPosition, SeekOrigin.Begin);
+                    }
 
                     this.Entries.Add(new Entry()
                     {
@@ -345,7 +268,7 @@ namespace Gibbed.Illusion.FileFormats
 
             this.Header = file;
             this.BlockStream = blockStream;
-            
+
             this.DataStream = data;
             this.FileStream = input;
 
@@ -400,7 +323,6 @@ namespace Gibbed.Illusion.FileFormats
             this.BlockStream.Seek(entry.Offset, SeekOrigin.Begin);
 
             var memory = new MemoryStream();
-            return memory;
             {
                 long left = entry.Size;
                 byte[] buffer = new byte[0x10000]; // - 30];

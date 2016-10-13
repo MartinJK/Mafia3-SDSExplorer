@@ -20,6 +20,8 @@ namespace Gibbed.Illusion.FileFormats.ResourceTypes
 
         public void Deserialize(DataStorage.FileHeader header, Stream input)
         {
+            input.Seek(input.Position + 6, SeekOrigin.Begin);
+
             this.Name = input.ReadStringU32();
             this.Unk1 = input.ReadValueU32();
             if (this.Unk1 != 1)

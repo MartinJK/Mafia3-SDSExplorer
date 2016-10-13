@@ -25,34 +25,39 @@ namespace Gibbed.Squish
             DXT5 = 1 << 2,
 
             /// <summary>
+            /// Use DXT5 compression.
+            /// </summary>
+            DXT10 = 1 << 3,
+
+            /// <summary>
             /// Use a slow but high quality colour compressor (the default).
             /// </summary>
-            ColourClusterFit = 1 << 3,
+            ColourClusterFit = 1 << 4,
             
             /// <summary>
             /// Use a fast but low quality colour compressor.
             /// </summary>
-            ColourRangeFit = 1 << 4,
+            ColourRangeFit = 1 << 5,
 
             /// <summary>
             /// Use a perceptual metric for colour error (the default).
             /// </summary>
-            ColourMetricPerceptual = 1 << 5,
+            ColourMetricPerceptual = 1 << 6,
             
             /// <summary>
             /// Use a uniform metric for colour error.
             /// </summary>
-            ColourMetricUniform = 1 << 6,
+            ColourMetricUniform = 1 << 7,
 
             /// <summary>
             /// Weight the colour by alpha during cluster fit (disabled by default).
             /// </summary>
-            WeightColourByAlpha = 1 << 7,
+            WeightColourByAlpha = 1 << 8,
 
             /// <summary>
             /// Use a very slow but very high quality colour compressor.
             /// </summary>
-            ColourIterativeClusterFit = 1 << 8,
+            ColourIterativeClusterFit = 1 << 9,
         }
 
 		private	static bool	Is64Bit()

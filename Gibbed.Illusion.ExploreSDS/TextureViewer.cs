@@ -18,7 +18,6 @@ namespace Gibbed.Illusion.ExploreSDS
         {
             var resource = new FileFormats.ResourceTypes.TextureResource();
             resource.Deserialize(entry.Header, entry.Data);
-
             this.Text += ": " + entry.Description;
 
             this.Entry = entry;
@@ -36,29 +35,24 @@ namespace Gibbed.Illusion.ExploreSDS
 
         private void UpdatePreview()
         {
-            var memory = new MemoryStream();
+            MemoryStream memory = new MemoryStream();
             memory.Write(this.Resource.Data, 0, this.Resource.Data.Length);
-            memory.Position = 0;
-
-            var dds = new Gibbed.Squish.DDSFile();
-            dds.Deserialize(memory);
-
-            var image = dds.Image(true, true, true, this.toggleAlphaButton.Checked);
-
-            if (this.toolStripButton1.Checked == true)
+            memory.Position = 0L;
+            Gibbed.Squish.DDSFile expr_32 = new Gibbed.Squish.DDSFile();
+            expr_32.Deserialize(memory);
+            var image = expr_32.Image(true, true, true, this.toggleAlphaButton.Checked);
+            if (this.toolStripButton1.Checked)
             {
                 this.previewPictureBox.Dock = DockStyle.Fill;
                 this.previewPictureBox.Image = image;
                 this.previewPictureBox.SizeMode = PictureBoxSizeMode.Zoom;
+                return;
             }
-            else
-            {
-                this.previewPictureBox.Dock = DockStyle.None;
-                this.previewPictureBox.Image = image;
-                this.previewPictureBox.Width = image.Width;
-                this.previewPictureBox.Height = image.Height;
-                this.previewPictureBox.SizeMode = PictureBoxSizeMode.Normal;
-            }
+            this.previewPictureBox.Dock = DockStyle.None;
+            this.previewPictureBox.Image = image;
+            this.previewPictureBox.Width = image.Width;
+            this.previewPictureBox.Height = image.Height;
+            this.previewPictureBox.SizeMode = PictureBoxSizeMode.Normal;
         }
 
         private void OnZoom(object sender, EventArgs e)
@@ -85,7 +79,7 @@ namespace Gibbed.Illusion.ExploreSDS
 
             using (var output = File.Open(this.saveFileDialog.FileName, FileMode.Create, FileAccess.Write, FileShare.ReadWrite))
             {
-                output.Write(this.Resource.Data, 0, this.Resource.Data.Length);
+                output.Write(this.Resource.Data, 4, this.Resource.Data.Length);
             }
         }
 

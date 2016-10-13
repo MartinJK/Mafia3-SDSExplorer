@@ -27,7 +27,7 @@ namespace Gibbed.Illusion.FileFormats.ResourceTypes
 
         public void Deserialize(DataStorage.FileHeader header, Stream input)
         {
-            if (header.Version == 2)
+            if (header.Version == 4)
             {
                 this.NameHash = input.ReadValueU64();
                 this.DataHash = input.ReadValueU64();

@@ -24,6 +24,7 @@ using System;
 using System.Drawing;
 using System.IO;
 using Gibbed.IO;
+using System.Diagnostics;
 
 namespace Gibbed.Squish
 {
@@ -114,16 +115,30 @@ namespace Gibbed.Squish
 
 		public void Deserialize(Stream input)
 		{
+            var pos = input.Position;
+            unsafe
+            {
+                var buffer = new byte[input.Length - pos];
+                input.Read(buffer, 0, buffer.Length);
+                TypedReference tr = __makeref(buffer);
+                IntPtr ptr = **(IntPtr**)(&tr);
+                string hex = ptr.ToString("X");
+                string hexOutput = String.Format("Data: 0x{0:X}", hex);
+                Debug.WriteLine(hexOutput);
+            }
+            input.Seek(pos, SeekOrigin.Begin);
+
             var magic = input.ReadValueU32();
 
             if (magic != 0x20534444 &&
-                magic != 0x44445320)
+                magic < 0x44440000 &&
+                magic > 0x44445000)
             {
                 throw new FormatException("not a DDS texture");
             }
 
-            this.Endian = magic == 0x20534444 ? Endian.Little : Endian.Big;
-
+            this.Endian = Endian.Little; // magic == 0x20534444 ? Endian.Little : Endian.Big;
+            
             this.Header = new DDS.Header();
             this.Header.Deserialize(input, this.Endian);
 
@@ -150,6 +165,18 @@ namespace Gibbed.Squish
                         squishFlags |= Native.Flags.DXT5;
                         break;
                     }
+
+                    case 0x30315844: // "DXT5"
+                        {
+                            squishFlags |= Native.Flags.DXT5;
+                            break;
+                        }
+
+                    case 0x32495441: // "ATI"
+                    {
+                        squishFlags |= Native.Flags.DXT5;
+                            break;
+                        }
 
                     default:
                     {

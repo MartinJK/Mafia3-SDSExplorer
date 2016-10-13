@@ -21,7 +21,7 @@ namespace Gibbed.Illusion.FileFormats
         {
             public DataStorage.FileHeader Header;
             public uint TypeId { get { return this.Header.TypeId; } }
-            public string Description { get; internal set; }
+            public string Description { get; set; }
             public MemoryStream Data;
         }
     }
