@@ -33,3 +33,6 @@ bin_/*
 */bin/*
 *.db
 */obj/*
+
+# NuGet packages
+packages/*
