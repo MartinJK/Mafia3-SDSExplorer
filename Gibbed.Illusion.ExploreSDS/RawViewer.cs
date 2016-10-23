@@ -81,5 +81,17 @@ namespace Gibbed.Illusion.ExploreSDS
                 this.Entry.Data.Position = 0;
             }
         }
+
+        private void tbBytesPerLine_TextChanged(object sender, EventArgs e)
+        {
+            // don't process empty entries
+            // ideally this should be updated when the user presses enter,
+            // but this should suffice for now
+            if (tbBytesPerLine.Text.Length > 0)
+            {
+                this.hexBox.BytesPerLine = int.Parse(tbBytesPerLine.Text);
+                this.hexBox.Update();
+            }
+        }
     }
 }
