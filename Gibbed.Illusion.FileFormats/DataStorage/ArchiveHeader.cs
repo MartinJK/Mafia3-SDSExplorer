@@ -6,7 +6,8 @@ using System.Collections.Generic;
 
 namespace Gibbed.Illusion.FileFormats.DataStorage
 {
-    // Copyright and thanks to CarLuver96 (http://forum.xentax.com/viewtopic.php?f=10&t=15336)
+    // Original research by Fireboyd78/CarLuver69 (https://github.com/Fireboyd78/)
+    // Source: http://forum.xentax.com/viewtopic.php?f=10&t=15336
     public class SDSChunkData
     {
         public int memorySize; // size in memory? (e.g. uncompressed size)
@@ -19,10 +20,10 @@ namespace Gibbed.Illusion.FileFormats.DataStorage
         public short unk_0C; // 0x80F?
 
         public short bufferSize; // this might be an int, but unlikely
-                                 /*
-                                     <<< Data padding >>>
-                                 */
-                                 /* @ bufferOffset */
+        /*
+            <<< Data padding >>>
+        */
+        /* @ bufferOffset */
         public byte[] buffer;
     };
 
@@ -79,11 +80,13 @@ namespace Gibbed.Illusion.FileFormats.DataStorage
         public uint ResourceTypeTableOffset;
         public uint BlockTableOffset;
 
-        public int xmlOffset; // always zero?
-        public int slotRamRequired; // offset / size of something?
-        public int slotVRamRequired; // always zero?
-        public int otherRamRequired; // offset / size of something?
-        public int otherVRamRequired; // always zero?
+        public int xmlOffset; // not used
+
+        public int slotRamRequired;
+        public int slotVRamRequired;
+        public int otherRamRequired;
+        public int otherVRamRequired;
+
         public int someFlag; // 1
 
         public int unk_30; // always zero?
@@ -141,15 +144,15 @@ namespace Gibbed.Illusion.FileFormats.DataStorage
                 BlockTableOffset = this.BlockTableOffset,
                 xmlOffset = this.xmlOffset,
                 slotRamRequired = this.slotRamRequired,
-                slotVRamRequired = this.slotVRamRequired, // always zero?
-                otherRamRequired = this.otherRamRequired, // offset / size of something?
-                otherVRamRequired = this.otherVRamRequired, // always zero?
+                slotVRamRequired = this.slotVRamRequired,
+                otherRamRequired = this.otherRamRequired,
+                otherVRamRequired = this.otherVRamRequired,
                 someFlag = this.someFlag, // 1
                 unk_30 = this.unk_30, // always zero?
                 unk_34 = this.unk_34, // always zero?
                 unk_38 = this.unk_38, // always zero?
                 unk_3C = this.unk_3C, // always zero?
-                dataCount = this.dataCount, // 0x14 (v20 / v1.4?)
+                dataCount = this.dataCount,
                 archiveHeaderChecksum = this.archiveHeaderChecksum,
                 resourceInfo = this.resourceInfo,
                 resourceTypes = this.resourceTypes,

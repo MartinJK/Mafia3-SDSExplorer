@@ -33,6 +33,7 @@
             this.toolStrip = new System.Windows.Forms.ToolStrip();
             this.loadFromFileButton = new System.Windows.Forms.ToolStripButton();
             this.saveToFileButton = new System.Windows.Forms.ToolStripButton();
+            this.tbBytesPerLine = new System.Windows.Forms.ToolStripComboBox();
             this.saveFileDialog = new System.Windows.Forms.SaveFileDialog();
             this.openFileDialog = new System.Windows.Forms.OpenFileDialog();
             this.toolStrip.SuspendLayout();
@@ -42,7 +43,7 @@
             // 
             this.hexBox.Dock = System.Windows.Forms.DockStyle.Fill;
             this.hexBox.Font = new System.Drawing.Font("Courier New", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.hexBox.LineInfoForeColor = System.Drawing.Color.Empty;
+            this.hexBox.InfoForeColor = System.Drawing.Color.Empty;
             this.hexBox.LineInfoVisible = true;
             this.hexBox.Location = new System.Drawing.Point(0, 25);
             this.hexBox.Name = "hexBox";
@@ -58,7 +59,8 @@
             // 
             this.toolStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.loadFromFileButton,
-            this.saveToFileButton});
+            this.saveToFileButton,
+            this.tbBytesPerLine});
             this.toolStrip.Location = new System.Drawing.Point(0, 0);
             this.toolStrip.Name = "toolStrip";
             this.toolStrip.Size = new System.Drawing.Size(640, 25);
@@ -82,6 +84,23 @@
             this.saveToFileButton.Size = new System.Drawing.Size(89, 22);
             this.saveToFileButton.Text = "Save To File";
             this.saveToFileButton.Click += new System.EventHandler(this.OnSaveToFile);
+            // 
+            // tbBytesPerLine
+            // 
+            this.tbBytesPerLine.AutoSize = false;
+            this.tbBytesPerLine.DropDownWidth = 75;
+            this.tbBytesPerLine.FlatStyle = System.Windows.Forms.FlatStyle.Standard;
+            this.tbBytesPerLine.Items.AddRange(new object[] {
+            "4",
+            "8",
+            "16",
+            "24",
+            "32"});
+            this.tbBytesPerLine.Name = "tbBytesPerLine";
+            this.tbBytesPerLine.Size = new System.Drawing.Size(50, 23);
+            this.tbBytesPerLine.Text = "16";
+            this.tbBytesPerLine.ToolTipText = "Bytes per Row";
+            this.tbBytesPerLine.TextChanged += new System.EventHandler(this.tbBytesPerLine_TextChanged);
             // 
             // saveFileDialog
             // 
@@ -115,5 +134,6 @@
         private System.Windows.Forms.ToolStripButton saveToFileButton;
         private System.Windows.Forms.SaveFileDialog saveFileDialog;
         private System.Windows.Forms.OpenFileDialog openFileDialog;
+        private System.Windows.Forms.ToolStripComboBox tbBytesPerLine;
     }
 }
